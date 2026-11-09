@@ -1,0 +1,37 @@
+{
+  "rules": {
+    "tree": {
+      ".read": "!root.child('config').child('viewCode').exists() || (auth != null && (root.child('viewers').child(auth.uid).exists() || root.child('editors').child(auth.uid).exists()))",
+      ".write": "auth != null && root.child('editors').child(auth.uid).exists()",
+      "title": {
+        ".validate": "newData.isString() && newData.val().length <= 80"
+      },
+      "people": {
+        "$pid": {
+          ".validate": "newData.hasChildren(['id', 'given']) && newData.child('given').isString()"
+        }
+      },
+      "unions": {
+        "$uid": {
+          ".validate": "newData.hasChildren(['id', 'a'])"
+        }
+      }
+    },
+    "viewers": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.isString() && newData.val() === root.child('config').child('viewCode').val()"
+      }
+    },
+    "editors": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.isString() && newData.val() === root.child('config').child('joinCode').val()"
+      }
+    },
+    "config": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="mn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Ургийн мод</title><meta name="description" content="Гэр бүлийн ургийн мод"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif:wght@600;700&display=swap" rel="stylesheet"><style id="app-style">
+:root{--bg:#f3eee4;--ink:#1f2a33;--muted:#6b7480;--line:#b3a68f;--panel:#fffdf8;--accent:#1f4e6b;--border:#e2d9c8;--soft:#ebe4d5}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg);overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+header{display:flex;align-items:center;gap:10px 12px;padding:12px 18px;background:#f7f3ea;flex-wrap:wrap}
+.title-input{font-family:"Noto Serif",Georgia,serif;font-size:24px;font-weight:700;border:0;background:transparent;color:var(--ink);padding:3px 6px;border-radius:8px;min-width:80px;max-width:min(480px,60vw)}
+.title-input:hover{background:#ece5d6}.title-input:focus{outline:2px solid #c9bda6;background:#fff}
+.stats{color:var(--muted);font-size:13px;white-space:nowrap}
+.spacer{flex:1}
+.search{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:0 12px;height:38px;width:min(300px,100%);color:var(--muted)}
+.search input{border:0;outline:0;flex:1;min-width:0;font:inherit;font-size:14px;background:transparent;color:var(--ink)}
+.btn{height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--border);background:#fff;font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn:hover{background:#f6f1e7}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.btn.primary:hover{background:#173d55}
+.btn.danger{color:#a3364d}.btn.danger:hover{background:#fbeef1}
+.btn.icon{width:38px;padding:0}
+.btn.sm{height:32px;font-size:13px;padding:0 10px;border-radius:8px}
+.menu-wrap{position:relative}
+.menu{position:absolute;right:0;top:44px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 30px rgba(60,45,20,.15);padding:6px;min-width:220px;display:none;z-index:30}
+.menu.open{display:block}
+.menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:9px 12px;border-radius:8px;font-size:14px;cursor:pointer}
+.menu button:hover{background:#f6f1e7}.menu hr{border:0;border-top:1px solid var(--border);margin:4px 0}
+.toolbar{display:flex;gap:6px 8px;align-items:center;padding:6px 18px 10px;border-bottom:1px solid var(--border);background:#f7f3ea;flex-wrap:wrap;font-size:13px}
+.seg{display:inline-flex;background:var(--soft);border-radius:9px;padding:3px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;font-size:13px;padding:5px 10px;border-radius:7px;cursor:pointer;color:var(--muted)}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08);font-weight:600}
+.tlabel{color:var(--muted);margin-left:6px}.tlabel:first-child{margin-left:0}
+.save{margin-left:auto;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.save .dot{width:8px;height:8px;border-radius:50%;background:#b8b0a0}
+.save[data-s=saved] .dot,.save[data-s=ready] .dot{background:#6fa36d}
+.save[data-s=saving] .dot,.save[data-s=dirty] .dot{background:#d9a441}
+.save[data-s=error] .dot,.save[data-s=readonly] .dot,.save[data-s=local] .dot{background:#c86a5a}
+main{flex:1;position:relative;display:flex;min-height:0}
+.stage{flex:1;position:relative;min-width:0;overflow:hidden;background-color:var(--bg);background-image:radial-gradient(#d3c8b2 1px,transparent 1px);background-size:22px 22px}
+#canvas{width:100%;height:100%;display:block;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+#canvas.dragging{cursor:grabbing}
+.node{cursor:pointer}
+.node .card{transition:filter .15s}
+.node:hover .card{filter:drop-shadow(0 4px 8px rgba(70,50,20,.18))}
+.node.sel .card{filter:drop-shadow(0 4px 12px rgba(31,78,107,.28))}
+.node.hit .card{filter:drop-shadow(0 0 0 #fff) drop-shadow(0 0 6px rgba(217,164,65,.9))}
+.dim{opacity:.22}
+.link{fill:none;stroke:var(--line);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+.link.hl{stroke:#1f4e6b;stroke-width:2.4}
+.couple{fill:none;stroke:#c29a62;stroke-width:2.2}
+.cross{fill:none;stroke:#c29a62;stroke-width:1.6;stroke-dasharray:5 5}
+.nm{font:600 12.5px Inter,system-ui,sans-serif;fill:var(--ink)}
+.sub{font:400 10.5px Inter,system-ui,sans-serif;fill:#5f6670}
+.sub2{font:400 10px Inter,system-ui,sans-serif;fill:#8a8f96}
+.halo{paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round}
+.ctitle{font:700 22px "Noto Serif",Georgia,serif;fill:#8d8371}
+.zoom{position:absolute;right:14px;bottom:14px;display:flex;flex-direction:column;gap:6px}
+.zoom .btn{width:38px;padding:0;font-size:18px;box-shadow:0 2px 6px rgba(60,45,20,.08)}
+.legend{position:absolute;left:14px;bottom:14px;background:rgba(255,253,248,.94);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:12px;display:flex;flex-wrap:wrap;gap:6px 14px;max-width:calc(100% - 90px);color:#4a525c}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.legend i.ln{width:18px;height:0;border-top:2px solid #c29a62;border-radius:0}
+.legend i.dash{width:18px;height:0;border-top:2px dashed #c29a62;border-radius:0}
+.empty{position:absolute;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none}
+.empty.show{display:flex}
+.empty .box{pointer-events:auto;background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:28px 30px;text-align:center;max-width:360px;box-shadow:0 10px 30px rgba(60,45,20,.08)}
+.empty h3{font-family:"Noto Serif",Georgia,serif;margin:0 0 6px;font-size:20px}
+.empty p{color:var(--muted);font-size:14px;margin:0 0 18px;line-height:1.5}
+.lock{background:rgba(243,238,228,.85);z-index:15}
+.empty .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(255,253,248,.94);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-size:12px;color:var(--muted);white-space:nowrap;pointer-events:none}
+aside.panel{width:330px;flex:none;border-left:1px solid var(--border);background:var(--panel);overflow:auto;padding:18px 20px 24px;display:none}
+aside.panel.open{display:block}
+.p-top{display:flex;justify-content:flex-end;margin:-6px -8px 0 0}
+.p-head{text-align:center;margin-bottom:14px}
+.p-head h2{font-family:"Noto Serif",Georgia,serif;font-size:21px;margin:8px 0 2px}
+.p-head .m{color:var(--muted);font-size:13px;line-height:1.5}
+.p-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:14px 0 16px}
+.p-actions .wide{grid-column:1/-1}
+.p-sec{border-top:1px solid var(--border);padding-top:12px;margin-top:12px}
+.p-sec h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.p-note{font-size:14px;line-height:1.55;white-space:pre-wrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:#fff;border-radius:999px;padding:3px 10px 3px 3px;font-size:13px;cursor:pointer}
+.chip:hover{background:#f6f1e7}
+.chip svg{flex:none}
+.none{color:#a09886;font-size:13px}
+.overlay{position:fixed;inset:0;background:rgba(30,25,15,.38);display:none;align-items:center;justify-content:center;z-index:50;padding:14px}
+.overlay.open{display:flex}
+.modal{background:var(--panel);border-radius:16px;width:min(580px,100%);max-height:94vh;overflow:auto;padding:22px 24px;box-shadow:0 20px 60px rgba(30,20,5,.3)}
+.modal.small{width:min(420px,100%)}
+.m-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.m-head h3{font-family:"Noto Serif",Georgia,serif;margin:0;font-size:21px}
+.m-head .m{color:var(--muted);font-size:13px;margin-top:3px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.f{display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:#4a525c;font-weight:500}
+.f.full{grid-column:1/-1}
+.f input,.f textarea,.f select{font:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--border);border-radius:9px;background:#fff;color:var(--ink);font-weight:400}
+.f input:focus,.f textarea:focus,.f select:focus{outline:2px solid #9fbad0;border-color:#9fbad0}
+.f textarea{min-height:64px;resize:vertical}
+.f .err{color:#a3364d;font-size:12px;display:none}.f.bad .err{display:block}.f.bad input{border-color:#d68a99}
+.m-sec{margin-top:18px}
+.m-sec h4{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.av-row{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;font-size:12.5px;color:#4a525c}
+.av-row>span{width:52px}
+.emoji-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:4px;margin-top:10px;max-height:168px;overflow:auto;padding:2px}
+.emoji-grid button{height:38px;border:1px solid transparent;background:#fff;border-radius:9px;font-size:21px;cursor:pointer;line-height:1}
+.emoji-grid button:hover{background:#f6f1e7}.emoji-grid button.on{border-color:var(--accent);background:#eaf1f6}
+.sw{width:26px;height:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--border);cursor:pointer;padding:0}
+.sw.on{box-shadow:0 0 0 2px var(--accent)}
+.sw.auto{background:conic-gradient(#4f7cac 0 50%,#c0566e 0)}
+.shp{width:38px;height:34px;border:1px solid var(--border);background:#fff;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.shp.on{border-color:var(--accent);background:#eaf1f6}
+.photo-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;margin-top:14px;line-height:1.4}
+.check input{margin-top:2px}
+.m-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#1f2a33;color:#fff;padding:9px 16px;border-radius:10px;font-size:13.5px;opacity:0;transition:.2s;pointer-events:none;z-index:60}
+.toast.show{opacity:1;transform:translateX(-50%)}
+textarea.json{width:100%;min-height:220px;font:12px ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--border);border-radius:9px;padding:10px}
+@media (max-width:760px){
+ header{padding:10px 12px}.toolbar{padding:6px 12px 8px}
+ .title-input{font-size:20px}
+ .search{order:5;width:100%}
+ .save{margin-left:0;width:100%}
+ aside.panel{position:absolute;left:0;right:0;bottom:0;width:auto;max-height:60%;border-left:0;border-top:1px solid var(--border);border-radius:18px 18px 0 0;box-shadow:0 -10px 30px rgba(60,45,20,.15);z-index:20}
+ .grid{grid-template-columns:1fr}
+ .hint{display:none}
+ .tlabel{display:none}
+}
+</style></head><body><div id="app"></div><script src="config.js"></script><script id="app-js">
+(function(){
+"use strict";
+var HEAD_UNUSED='<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Ургийн мод</title><meta name="description" content="Гэр бүлийн ургийн мод"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif:wght@600;700&display=swap" rel="stylesheet">';
+var GENDER={m:'#4f7cac',f:'#c0566e',o:'#6f8a5a'};
+var PALETTE=['#4f7cac','#c0566e','#5b8c6a','#c08a3e','#7a5ca8','#3e8f97','#b5653f','#5c6b7a','#9a4f8a','#6f8f3a'];
+var GENPAL=['#8a5a3c','#4f7cac','#5b8c6a','#c08a3e','#7a5ca8','#3e8f97','#c0566e','#5c6b7a'];
+var EMOJI=['👴','👵','🧓','👨','👩','🧔','👱‍♂️','👱‍♀️','👨‍🦳','👩‍🦳','👦','👧','👶','🧒','🧑‍🎓','👨‍🌾','👩‍🌾','👨‍⚕️','👩‍⚕️','🧑‍🏫','👨‍🔧','👩‍💻','🧑‍🍳','🏇','🐎','🐫','🐑','🦅','🐺','🐻','🦌','🐕','🌙','☀️','⭐','⛰️','🏔️','🌿','🌸','🌻','🔥','💧','🎻','📚','⚽','🏹'];
+var DIM={td:{B:184,D:68,gc:14,gs:26,lv:134},lr:{B:68,D:184,gc:10,gs:16,lv:250},radial:{B:96,D:0,gc:8,gs:14}};
+
+function uid(){return Math.random().toString(36).slice(2,10);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function trunc(s,n){s=String(s||'');return s.length>n?s.slice(0,n-1)+'…':s;}
+function $(id){return document.getElementById(id);}
+
+/* ---------- sample ---------- */
+function sampleState(){
+  var P={},U={},O=[];
+  function add(id,given,pat,clan,g,born,died,av,pu){P[id]={id:id,given:given,patronymic:pat,clan:clan,gender:g,born:born||'',died:died||'',note:'',avatar:av||{kind:'initial',shape:'circle'},parentUnion:pu||null,created:O.length+1};O.push(id);}
+  function un(id,a,b){U[id]={id:id,a:a,b:b};}
+  add('p1','Дорж','Цэрэн','Боржигин','m','1928','1995',{kind:'emoji',emoji:'👴',shape:'hex'});
+  add('p2','Цэцэг','Бат','Хиад','f','1932','2008',{kind:'emoji',emoji:'👵',shape:'hex'});
+  un('u1','p1','p2');
+  add('p3','Баатар','Дорж','Боржигин','m','1955','',{kind:'initial',shape:'circle'},'u1');
+  add('p4','Сарангэрэл','Гомбо','Олхонуд','f','1958','',{kind:'emoji',emoji:'🌸',shape:'circle'});
+  un('u2','p3','p4');
+  add('p5','Оюунаа','Дорж','Боржигин','f','1960','',{kind:'initial',shape:'square'},'u1');
+  add('p6','Ганзориг','Сүх','Тайчууд','m','1957','',{kind:'emoji',emoji:'🏇',shape:'square'});
+  un('u3','p6','p5');
+  add('p7','Мөнхбаяр','Дорж','Боржигин','m','1965','',{kind:'emoji',emoji:'🦅',shape:'circle',color:'#c08a3e'},'u1');
+  add('p8','Тэмүүлэн','Баатар','Боржигин','m','1983','',{kind:'initial',shape:'circle',color:'#3e8f97'},'u2');
+  add('p9','Нарантуяа','Энх','Хонгирад','f','1985','',{kind:'emoji',emoji:'☀️',shape:'circle'});
+  un('u4','p8','p9');
+  add('p10','Ану','Баатар','Боржигин','f','1988','',{kind:'emoji',emoji:'📚',shape:'square'},'u2');
+  add('p11','Билгүүн','Ганзориг','Тайчууд','m','1984','',{kind:'initial',shape:'hex'},'u3');
+  add('p12','Солонго','Ганзориг','Тайчууд','f','1990','',{kind:'emoji',emoji:'🌻',shape:'circle'},'u3');
+  add('p13','Есүй','Тэмүүлэн','Боржигин','f','2012','',{kind:'emoji',emoji:'👧',shape:'circle'},'u4');
+  add('p14','Хүслэн','Тэмүүлэн','Боржигин','m','2015','',{kind:'emoji',emoji:'⚽',shape:'circle'},'u4');
+  return {title:'Манай ургийн мод',people:P,unions:U,order:O,settings:{layout:'td',lines:'elbow',color:'gender'}};
+}
+
+/* ---------- state ---------- */
+var CFG=(window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey)?window.FIREBASE_CONFIG:null;
+var MODE=CFG?'firebase':'local',fb=null,canEdit=!CFG,synced=null,firstSync=!!CFG;
+var LS_KEY='urgiin-mod-data',LS_SET='urgiin-mod-settings';
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
+var state={title:'Манай ургийн мод',people:{},unions:{},order:[],settings:lsGet(LS_SET)||{}};
+function loadData(d){state.title=d.title||'Манай ургийн мод';state.people=d.people||{};state.unions=d.unions||{};}
+if(MODE==='local'){var saved0=lsGet(LS_KEY);loadData(saved0&&saved0.people?saved0:sampleState());}
+function normalize(){
+  state.people=state.people||{};state.unions=state.unions||{};
+  state.settings=Object.assign({layout:'td',lines:'elbow',color:'gender'},state.settings||{});
+  if(!DIM[state.settings.layout])state.settings.layout='td';
+  state.order=Object.keys(state.people).sort(function(a,b){return ((state.people[a].created||0)-(state.people[b].created||0))||(a<b?-1:a>b?1:0);});
+  Object.keys(state.unions).forEach(function(k){var u=state.unions[k];
+    if(u.a&&!state.people[u.a])u.a=null; if(u.b&&!state.people[u.b])u.b=null;
+    if(!u.a&&u.b){u.a=u.b;u.b=null;}
+    if(!u.a)delete state.unions[k];});
+  state.order.forEach(function(id){var p=state.people[id];if(p.parentUnion&&!state.unions[p.parentUnion])p.parentUnion=null;});
+}
+normalize();
+
+function P(id){return state.people[id];}
+function displayName(p){var pat=(p.patronymic||'').trim();return ((pat?pat.charAt(0).toUpperCase()+'.':'')+(p.given||'').trim())||'Нэргүй';}
+function yearsText(p){if(p.born&&p.died)return p.born+' – '+p.died;if(p.born)return p.born+' онд төрсөн';if(p.died)return '? – '+p.died;return '';}
+function clanText(p){return p.clan&&p.clan.trim()?p.clan.trim()+' овог':'';}
+function unionList(){return Object.keys(state.unions).map(function(k){return state.unions[k];});}
+function unionsOf(pid){return unionList().filter(function(u){return u.a===pid||u.b===pid;});}
+function partnerOf(u,pid){return u.a===pid?u.b:u.a;}
+function kidsOf(uId){
+  return state.order.filter(function(id){return P(id).parentUnion===uId;})
+    .map(function(id,i){return {id:id,i:i,b:parseInt(P(id).born,10)||99999};})
+    .sort(function(a,b){return a.b-b.b||a.i-b.i;}).map(function(x){return x.id;});
+}
+function parentsOf(pid){var p=P(pid),u=p.parentUnion&&state.unions[p.parentUnion];return u?[u.a,u.b].filter(Boolean):[];}
+function spousesOf(pid){return unionsOf(pid).map(function(u){return partnerOf(u,pid);}).filter(Boolean);}
+function childrenOf(pid){var r=[];unionsOf(pid).forEach(function(u){r=r.concat(kidsOf(u.id));});return r;}
+function siblingsOf(pid){var p=P(pid);if(!p.parentUnion)return [];return kidsOf(p.parentUnion).filter(function(x){return x!==pid;});}
+
+/* ---------- colors ---------- */
+function hex2rgb(h){h=h.replace('#','');return [parseInt(h.substr(0,2),16),parseInt(h.substr(2,2),16),parseInt(h.substr(4,2),16)];}
+function mix(a,b,t){var x=hex2rgb(a),y=hex2rgb(b);return '#'+[0,1,2].map(function(i){return ('0'+Math.round(x[i]+(y[i]-x[i])*t).toString(16)).slice(-2);}).join('');}
+function hashStr(s){var h=0;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return Math.abs(h);}
+function clanColor(c){c=(c||'').trim();if(!c)return '#8a8f96';var cl=clanList();var i=cl.indexOf(c);return PALETTE[(i<0?hashStr(c):i)%PALETTE.length];}
+function clanList(){var s=[];state.order.forEach(function(id){var c=(P(id).clan||'').trim();if(c&&s.indexOf(c)<0)s.push(c);});return s;}
+function colorFor(p,d){var m=state.settings.color;if(m==='clan')return clanColor(p.clan);if(m==='gen')return GENPAL[(d||0)%GENPAL.length];return GENDER[p.gender]||GENDER.o;}
+function avColor(p){return (p.avatar&&p.avatar.color)||GENDER[p.gender]||GENDER.o;}
+
+/* ---------- avatars ---------- */
+function shapeEl(shape,cx,cy,r,attrs){
+  if(shape==='square')return '<rect x="'+(cx-r)+'" y="'+(cy-r)+'" width="'+(2*r)+'" height="'+(2*r)+'" rx="'+(r*0.36)+'" '+attrs+'/>';
+  if(shape==='hex'){var pts=[];for(var i=0;i<6;i++){var a=Math.PI/3*i-Math.PI/2;pts.push((cx+r*1.06*Math.cos(a)).toFixed(2)+','+(cy+r*1.06*Math.sin(a)).toFixed(2));}return '<polygon points="'+pts.join(' ')+'" stroke-linejoin="round" '+attrs+'/>';}
+  return '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" '+attrs+'/>';
+}
+var cpN=0;
+function avatarSVG(p,cx,cy,r){
+  var a=p.avatar||{},kind=a.kind||'initial',col=avColor(p),shape=a.shape||'circle';
+  if(kind==='photo'&&a.photo){var id='cp'+(++cpN);
+    return '<clipPath id="'+id+'">'+shapeEl(shape,cx,cy,r,'')+'</clipPath><image href="'+esc(a.photo)+'" x="'+(cx-r*1.07)+'" y="'+(cy-r*1.07)+'" width="'+(r*2.14)+'" height="'+(r*2.14)+'" preserveAspectRatio="xMidYMid slice" clip-path="url(#'+id+')"/>'+shapeEl(shape,cx,cy,r,'fill="none" stroke="'+col+'" stroke-width="2"');}
+  if(kind==='emoji'&&a.emoji){return shapeEl(shape,cx,cy,r,'fill="'+mix(col,'#ffffff',.8)+'" stroke="'+col+'" stroke-width="1.6"')+'<text x="'+cx+'" y="'+(cy+r*0.04)+'" text-anchor="middle" dominant-baseline="central" font-size="'+(r*1.1)+'">'+esc(a.emoji)+'</text>';}
+  var ch=((p.given||'?').trim().charAt(0)||'?').toUpperCase();
+  return shapeEl(shape,cx,cy,r,'fill="'+col+'"')+'<text x="'+cx+'" y="'+(cy+r*0.03)+'" text-anchor="middle" dominant-baseline="central" fill="#fff" font-family="Inter,sans-serif" font-weight="700" font-size="'+(r*0.85)+'">'+esc(ch)+'</text>';
+}
+function miniAvatar(p,size){return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+avatarSVG(p,size/2,size/2,size/2-2)+'</svg>';}
+
+/* ---------- layout ---------- */
+function computeLayout(){
+  var S=state.settings.layout,C=DIM[S];
+  var placed={},done={},cross=[];
+  function isBlood(id){return !!P(id).parentUnion;}
+  function build(head,depth){
+    placed[head]=1;
+    var unit={head:head,depth:depth,spouses:[],groups:[]},queue=[];
+    function handle(owner){
+      unionsOf(owner).forEach(function(u){
+        if(done[u.id])return;done[u.id]=1;
+        var sp=partnerOf(u,owner),anchors=[owner];
+        if(sp){
+          if(owner===head&&!placed[sp]&&!isBlood(sp)){placed[sp]=1;unit.spouses.push(sp);anchors=[head,sp];queue.push(sp);}
+          else cross.push([owner,sp]);
+        }
+        unit.groups.push({anchors:anchors,ids:kidsOf(u.id).filter(function(k){return !placed[k];}),kids:[]});
+      });
+    }
+    handle(head);
+    queue.forEach(handle);
+    unit.groups.forEach(function(g){g.kids=g.ids.filter(function(k){return !placed[k];}).map(function(k){return build(k,depth+1);});});
+    return unit;
+  }
+  function marriedIn(id){return !isBlood(id)&&unionsOf(id).some(function(u){var o=partnerOf(u,id);return o&&isBlood(o);});}
+  var roots=[];
+  state.order.forEach(function(id){if(!placed[id]&&!isBlood(id)&&!marriedIn(id))roots.push(build(id,0));});
+  state.order.forEach(function(id){if(!placed[id])roots.push(build(id,0));});
+  function measure(unit){
+    var n=1+unit.spouses.length;unit.ob=n*C.B+(n-1)*C.gc;
+    var kb=0,cnt=0;
+    unit.groups.forEach(function(g){g.kids.forEach(function(k){measure(k);kb+=k.w;cnt++;});});
+    unit.kb=cnt?kb+C.gs*(cnt-1):0;unit.w=Math.max(unit.ob,unit.kb);
+  }
+  var pos={},childLinks=[],couples=[],maxD=0;
+  function arrange(unit){
+    var h=unit.head,sp=unit.spouses;
+    if(sp.length===0)return [h];
+    if(sp.length===1)return (P(h).gender==='f'&&P(sp[0]).gender==='m')?[sp[0],h]:[h,sp[0]];
+    var left=[],right=[];sp.forEach(function(s,i){if(i%2===0)right.push(s);else left.unshift(s);});
+    return left.concat([h],right);
+  }
+  function place(unit,u0){
+    maxD=Math.max(maxD,unit.depth);
+    var order=arrange(unit),s=u0+(unit.w-unit.ob)/2;
+    order.forEach(function(id,i){pos[id]={u:s+i*(C.B+C.gc)+C.B/2,d:unit.depth};});
+    unit.spouses.forEach(function(sp){couples.push([unit.head,sp]);});
+    var groups=unit.groups.filter(function(g){return g.kids.length;}).map(function(g){
+      return {anchors:g.anchors,kids:g.kids,au:g.anchors.reduce(function(a,id){return a+pos[id].u;},0)/g.anchors.length};
+    }).sort(function(a,b){return a.au-b.au;});
+    var k=u0+(unit.w-unit.kb)/2;
+    groups.forEach(function(g){
+      g.kids.forEach(function(c){place(c,k);k+=c.w+C.gs;});
+      childLinks.push({anchors:g.anchors,kids:g.kids.map(function(c){return c.head;}),d:unit.depth});
+    });
+  }
+  var u=0;
+  roots.forEach(function(r,i){measure(r);if(i)u+=C.gs*2.5;place(r,u);u+=r.w;});
+  return {S:S,C:C,roots:roots.length,pos:pos,childLinks:childLinks,couples:couples,cross:cross,total:u,gens:Object.keys(pos).length?maxD+1:0};
+}
+
+/* ---------- drawing ---------- */
+var boxes={},bounds=null;
+function drawTree(){
+  var L=computeLayout(),S=L.S,C=L.C,pos=L.pos,lines=state.settings.lines;
+  var q=($('q').value||'').trim().toLowerCase();
+  var sel=selected&&pos[selected]?selected:null;
+  var related={};
+  if(sel){related[sel]=1;parentsOf(sel).concat(spousesOf(sel),childrenOf(sel)).forEach(function(x){related[x]=1;});}
+  var linkSvg='',coupleSvg='',nodeSvg='';
+  var extra='';boxes={};cpN=0;
+  var minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  function grow(x,y,w,h){minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x+w);maxY=Math.max(maxY,y+h);}
+  function f(n){return n.toFixed(1);}
+  var mp,polar,r0,step,th,rr,single=false,rootMid=0,nodePt;
+  if(S==='radial'){
+    var total=Math.max(L.total,1);single=L.roots===1;
+    if(single){r0=0;step=Math.max(170,total/(2*Math.PI)*1.08);
+      var d0=Object.keys(pos).filter(function(id){return pos[id].d===0;});
+      rootMid=d0.reduce(function(a,id){return a+pos[id].u;},0)/Math.max(1,d0.length);}
+    else{r0=Math.max(130,total/(2*Math.PI));step=175;}
+    th=function(u){return u/total*2*Math.PI-Math.PI/2;};
+    rr=function(d){return r0+d*step;};
+    polar=function(t,r){return [r*Math.cos(t),r*Math.sin(t)];};
+    nodePt=function(id){var p=pos[id];return single&&p.d===0?[p.u-rootMid,0]:polar(th(p.u),rr(p.d));};
+    for(var gi=single?1:0;gi<L.gens;gi++)extra+='<circle r="'+rr(gi).toFixed(1)+'" fill="none" stroke="#d9cfbb" stroke-dasharray="2 7"/>';
+  } else {
+    mp=S==='td'?function(u,v){return [u,v];}:function(u,v){return [v,u];};
+  }
+  function pathOf(pts){return 'M'+pts.map(function(p){return f(p[0])+' '+f(p[1]);}).join(' L');}
+  function hl(a,b){return sel&&(a.indexOf(sel)>=0||b.indexOf(sel)>=0);}
+
+  /* links */
+  L.childLinks.forEach(function(cl){
+    var isHl=hl(cl.anchors,cl.kids);
+    cl.kids.forEach(function(kid){
+      var cls='link'+(sel&&(cl.anchors.indexOf(sel)>=0||kid===sel)?' hl':''),d='';
+      var au=cl.anchors.reduce(function(a,id){return a+pos[id].u;},0)/cl.anchors.length,cu=pos[kid].u,two=cl.anchors.length>1;
+      if(S==='radial'&&single&&cl.d===0){
+        var A0=[au-rootMid,0],tc0=th(cu),E0=polar(tc0,rr(1)),M0=polar(tc0,step*0.42);
+        d=lines==='curve'?'M'+f(A0[0])+' '+f(A0[1])+' Q'+f(M0[0])+' '+f(M0[1])+' '+f(E0[0])+' '+f(E0[1]):pathOf([A0,M0,E0]);
+      } else if(S==='radial'){
+        var ta=th(au),tc=th(cu),ra=rr(cl.d),rc=rr(cl.d+1),rm=ra+step*0.5;
+        var A=polar(ta,ra),E=polar(tc,rc);
+        if(lines==='curve'){var c1=polar(ta,rm),c2=polar(tc,rm);d='M'+f(A[0])+' '+f(A[1])+' C'+f(c1[0])+' '+f(c1[1])+' '+f(c2[0])+' '+f(c2[1])+' '+f(E[0])+' '+f(E[1]);}
+        else{var m1=polar(ta,rm),m2=polar(tc,rm),dt=tc-ta;
+          d='M'+f(A[0])+' '+f(A[1])+' L'+f(m1[0])+' '+f(m1[1])+(Math.abs(dt)>1e-4?' A'+f(rm)+' '+f(rm)+' 0 '+(Math.abs(dt)>Math.PI?1:0)+' '+(dt>0?1:0)+' '+f(m2[0])+' '+f(m2[1]):'')+' L'+f(E[0])+' '+f(E[1]);}
+      } else {
+        var v=cl.d*C.lv,bot=v+C.D,cv=(cl.d+1)*C.lv,mid=bot+(cv-bot)/2,av=two?v+C.D/2:bot;
+        if(lines==='curve'){
+          var p0=mp(au,av),pb=mp(au,bot),q1=mp(au,mid),q2=mp(cu,mid),pe=mp(cu,cv);
+          d='M'+f(p0[0])+' '+f(p0[1])+(two?' L'+f(pb[0])+' '+f(pb[1]):'')+' C'+f(q1[0])+' '+f(q1[1])+' '+f(q2[0])+' '+f(q2[1])+' '+f(pe[0])+' '+f(pe[1]);
+        } else d=pathOf([mp(au,av),mp(au,mid),mp(cu,mid),mp(cu,cv)]);
+      }
+      linkSvg+='<path class="'+cls+'" d="'+d+'"/>';
+    });
+  });
+  L.couples.forEach(function(c){
+    var a=pos[c[0]],b=pos[c[1]];if(a.u>b.u){var t=a;a=b;b=t;}
+    if(S==='radial'&&single&&a.d===0){coupleSvg+='<path class="couple" d="'+pathOf([nodePt(c[0]),nodePt(c[1])])+'"/>';}
+    else if(S==='radial'){var A=polar(th(a.u),rr(a.d)),B=polar(th(b.u),rr(b.d)),dt=th(b.u)-th(a.u);
+      coupleSvg+='<path class="couple" d="M'+f(A[0])+' '+f(A[1])+' A'+f(rr(a.d))+' '+f(rr(a.d))+' 0 '+(dt>Math.PI?1:0)+' 1 '+f(B[0])+' '+f(B[1])+'"/>';}
+    else{var v=a.d*C.lv+C.D/2,p1=mp(a.u+C.B/2,v),p2=mp(b.u-C.B/2,v),m=mp((a.u+b.u)/2,v);
+      coupleSvg+='<path class="couple" d="'+pathOf([p1,p2])+'"/><circle cx="'+f(m[0])+'" cy="'+f(m[1])+'" r="3.2" fill="#c29a62"/>';}
+  });
+  var seen={};
+  L.cross.forEach(function(c){
+    var k=[c[0],c[1]].sort().join('|');if(seen[k]||!pos[c[0]]||!pos[c[1]])return;seen[k]=1;
+    var a=center(c[0]),b=center(c[1]);
+    var mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,dx=b[0]-a[0],dy=b[1]-a[1],len=Math.sqrt(dx*dx+dy*dy)||1,off=Math.min(120,len*0.25);
+    coupleSvg+='<path class="cross" d="M'+f(a[0])+' '+f(a[1])+' Q'+f(mx-dy/len*off)+' '+f(my+dx/len*off)+' '+f(b[0])+' '+f(b[1])+'"/>';
+  });
+  function center(id){var p=pos[id];if(S==='radial')return nodePt(id);var v=p.d*C.lv+C.D/2;return mp(p.u,v);}
+
+  /* nodes */
+  state.order.forEach(function(id){
+    var p=P(id),ps=pos[id];if(!ps)return;
+    var col=colorFor(p,ps.d),tint=mix(col,'#ffffff',.9),border=mix(col,'#ffffff',.5),isSel=id===sel;
+    var hit=q&&(displayName(p)+' '+(p.given||'')+' '+(p.patronymic||'')+' '+(p.clan||'')).toLowerCase().indexOf(q)>=0;
+    var cls='node'+(isSel?' sel':'')+(hit?' hit':'')+((q&&!hit)||(sel&&!related[id])?' dim':'');
+    if(S==='radial'){
+      var c=nodePt(id),x=c[0],y=c[1];
+      boxes[id]={x:x-44,y:y-32,w:88,h:96};grow(x-48,y-34,96,100);
+      nodeSvg+='<g class="'+cls+'" data-id="'+id+'" transform="translate('+f(x)+','+f(y)+')"><g class="card">'+
+        '<circle r="30" fill="'+tint+'" stroke="'+(isSel?mix(col,'#000000',.15):border)+'" stroke-width="'+(isSel?3:1.6)+'"/>'+avatarSVG(p,0,0,22)+'</g>'+
+        '<text class="nm halo" y="47" text-anchor="middle">'+esc(trunc(displayName(p),16))+'</text>'+
+        (yearsText(p)?'<text class="sub halo" y="61" text-anchor="middle">'+esc(p.born&&p.died?yearsText(p):(p.born||('† '+p.died)))+'</text>':'')+'</g>';
+    } else {
+      var v=ps.d*C.lv,xy=mp(ps.u-C.B/2,v),w=S==='td'?C.B:C.D,h=S==='td'?C.D:C.B;
+      if(S==='lr'){xy=[v,ps.u-C.B/2];}
+      boxes[id]={x:xy[0],y:xy[1],w:w,h:h};grow(xy[0],xy[1],w,h);
+      var y2=yearsText(p),y3=clanText(p);
+      var ny=y2&&y3?25:(y2||y3?30:38);
+      nodeSvg+='<g class="'+cls+'" data-id="'+id+'" transform="translate('+f(xy[0])+','+f(xy[1])+')">'+
+        '<rect class="card" width="'+w+'" height="'+h+'" rx="12" fill="'+tint+'" stroke="'+(isSel?mix(col,'#000000',.1):border)+'" stroke-width="'+(isSel?2.5:1.2)+'"/>'+
+        '<rect width="4" height="'+(h-20)+'" x="0" y="10" rx="2" fill="'+col+'" opacity=".55"/>'+
+        avatarSVG(p,33,h/2,20)+
+        '<text class="nm" x="61" y="'+ny+'">'+esc(trunc(displayName(p),16))+'</text>'+
+        (y2?'<text class="sub" x="61" y="'+(ny+15)+'">'+esc(y2)+'</text>':'')+
+        (y3?'<text class="sub2" x="61" y="'+(ny+(y2?29:15))+'">'+esc(trunc(y3,21))+'</text>':'')+'</g>';
+    }
+  });
+  if(S==='radial'&&!single&&Object.keys(pos).length){
+    extra+='<text class="ctitle" text-anchor="middle" dominant-baseline="central">'+esc(trunc(state.title||'',22))+'</text>';
+    grow(-r0*0.6,-20,r0*1.2,40);
+  }
+  $('vp').innerHTML=extra+linkSvg+coupleSvg+nodeSvg;
+  bounds=Object.keys(pos).length?{x:minX,y:minY,w:maxX-minX,h:maxY-minY}:null;
+  return L;
+}
+
+/* ---------- view ---------- */
+var view={x:0,y:0,k:1},selected=null;
+function applyView(){$('vp').setAttribute('transform','translate('+view.x.toFixed(1)+','+view.y.toFixed(1)+') scale('+view.k.toFixed(4)+')');}
+function stageRect(){return $('canvas').getBoundingClientRect();}
+function fit(){if(!bounds)return;var r=stageRect(),pad=40;if(!r.width)return;
+  var k=Math.min((r.width-pad*2)/Math.max(bounds.w,1),(r.height-pad*2)/Math.max(bounds.h,1),1.25);
+  view.k=Math.max(0.1,k);view.x=r.width/2-(bounds.x+bounds.w/2)*view.k;view.y=r.height/2-(bounds.y+bounds.h/2)*view.k;applyView();}
+function centerOn(id){var b=boxes[id];if(!b)return;var r=stageRect();view.k=Math.max(view.k,0.85);
+  view.x=r.width/2-(b.x+b.w/2)*view.k;view.y=r.height/2-(b.y+b.h/2)*view.k;applyView();}
+function zoomAt(mx,my,f){var k=Math.min(3,Math.max(0.1,view.k*f));f=k/view.k;view.x=mx-(mx-view.x)*f;view.y=my-(my-view.y)*f;view.k=k;applyView();}
+
+/* ---------- render ---------- */
+function render(opts){
+  opts=opts||{};
+  var L=drawTree();
+  var n=state.order.length;
+  $('stats').textContent=n?(n+' хүн · '+L.gens+' үе'):'Хоосон';
+  if(document.activeElement!==$('title'))$('title').value=state.title||'';
+  document.querySelectorAll('.toolbar .seg').forEach(function(seg){var k=seg.getAttribute('data-set');
+    seg.querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-v')===state.settings[k]);});});
+  $('empty').classList.toggle('show',!n&&!firstSync&&!locked);
+  renderLegend(L);
+  renderPanel();
+  if(opts.fit)fit();else applyView();
+}
+function renderLegend(L){
+  var m=state.settings.color,h='';
+  if(!state.order.length){$('legend').style.display='none';return;}
+  $('legend').style.display='';
+  if(m==='gender')h='<span><i style="background:'+GENDER.m+'"></i>Эрэгтэй</span><span><i style="background:'+GENDER.f+'"></i>Эмэгтэй</span>';
+  else if(m==='clan'){var cl=clanList();h=cl.slice(0,10).map(function(c){return '<span><i style="background:'+clanColor(c)+'"></i>'+esc(c)+'</span>';}).join('')+(cl.length>10?'<span>+'+(cl.length-10)+'</span>':'');if(!cl.length)h='<span>Ургийн овог оруулаагүй байна</span>';}
+  else{for(var i=0;i<L.gens;i++)h+='<span><i style="background:'+GENPAL[i%GENPAL.length]+'"></i>'+(i+1)+'-р үе</span>';}
+  h+='<span><i class="ln"></i>Гэр бүл</span>';
+  if(L.cross.length)h+='<span><i class="dash"></i>Хоёр талын холбоо</span>';
+  $('legend').innerHTML=h;
+}
+function chipList(ids){if(!ids.length)return '<span class="none">—</span>';
+  return '<div class="chips">'+ids.map(function(id){var p=P(id);return '<button class="chip" data-goto="'+id+'">'+miniAvatar(p,24)+esc(displayName(p))+'</button>';}).join('')+'</div>';}
+function renderPanel(){
+  var el=$('panel');
+  if(!selected||!P(selected)){el.classList.remove('open');el.innerHTML='';return;}
+  var p=P(selected),par=parentsOf(selected);
+  var gtxt={m:'Эрэгтэй',f:'Эмэгтэй'}[p.gender]||'—';
+  el.innerHTML='<div class="p-top"><button class="btn icon sm" data-act="close" title="Хаах">✕</button></div>'+
+    '<div class="p-head">'+miniAvatar(p,92)+'<h2>'+esc(displayName(p))+'</h2><div class="m">'+
+      [esc(gtxt),esc(yearsText(p)),esc(clanText(p))].filter(Boolean).join(' · ')+'</div>'+
+      ((p.patronymic||'').trim()?'<div class="m">Овог: '+esc(p.patronymic)+'</div>':'')+'</div>'+
+    '<div class="p-actions">'+
+      '<button class="btn sm" data-act="child">+ Хүүхэд</button>'+
+      '<button class="btn sm" data-act="spouse">+ Хань</button>'+
+      (par.length<2?'<button class="btn sm wide" data-act="parent">+ Эцэг / эх</button>':'')+
+      '<button class="btn sm" data-act="edit">Засах</button>'+
+      '<button class="btn sm danger" data-act="delete">Устгах</button></div>'+
+    (p.note?'<div class="p-sec"><h4>Тэмдэглэл</h4><div class="p-note">'+esc(p.note)+'</div></div>':'')+
+    '<div class="p-sec"><h4>Эцэг эх</h4>'+chipList(par)+'</div>'+
+    '<div class="p-sec"><h4>Хань</h4>'+chipList(spousesOf(selected))+'</div>'+
+    '<div class="p-sec"><h4>Үр хүүхэд</h4>'+chipList(childrenOf(selected))+'</div>'+
+    '<div class="p-sec"><h4>Ах, эгч, дүү</h4>'+chipList(siblingsOf(selected))+'</div>';
+  el.classList.add('open');
+}
+function select(id,center){selected=id;render();if(center)setTimeout(function(){centerOn(id);},0);}
+
+/* ---------- storage: Firebase эсвэл энэ браузер ---------- */
+var SAVE_TXT={pending:'Холбогдож байна…',saving:'Хадгалж байна…',saved:'Хадгалсан — бүгдэд харагдана',ready:'Холбогдсон — өөрчлөлт бүгдэд шууд харагдана',
+  viewonly:'Харах горим — засахын тулд гэр бүлийн код оруулна уу',local:'Firebase тохируулаагүй — зөвхөн энэ браузерт хадгалагдана',
+  error:'Хадгалж чадсангүй',locked:'Хаалттай — гэр бүлийн код оруулна уу',offline:'Firebase-д холбогдож чадсангүй — config.js-ээ шалгана уу'};
+function setSave(s){var el=$('save');el.setAttribute('data-s',s);el.lastChild.textContent=SAVE_TXT[s]||'';}
+function stable(o){
+  if(o===null||o===undefined)return 'null';
+  if(Array.isArray(o))return '['+o.map(stable).join(',')+']';
+  if(typeof o==='object')return '{'+Object.keys(o).sort().filter(function(k){return o[k]!==null&&o[k]!==undefined;}).map(function(k){return JSON.stringify(k)+':'+stable(o[k]);}).join(',')+'}';
+  return JSON.stringify(o);
+}
+function dataOf(){return JSON.parse(JSON.stringify({title:state.title||'',people:state.people,unions:state.unions}));}
+function commit(){normalize();render();persist();}
+function persist(){
+  if(MODE==='local'){setSave(lsSet(LS_KEY,dataOf())?'local':'error');return;}
+  if(!fb||!canEdit||!synced)return;
+  var cur=dataOf(),up={},n=0;
+  if(cur.title!==synced.title){up.title=cur.title;n++;}
+  ['people','unions'].forEach(function(col){var a=synced[col]||{},b=cur[col]||{};
+    Object.keys(Object.assign({},a,b)).forEach(function(id){
+      var x=a[id]?stable(a[id]):null,y=b[id]?stable(b[id]):null;
+      if(x!==y){up[col+'/'+id]=b[id]||null;n++;}});});
+  if(!n)return;
+  synced=cur;setSave('saving');
+  fb.update(fb.ref(fb.db,'tree'),up).then(function(){setSave('saved');},function(e){
+    setSave('error');toast(/PERMISSION/i.test(String(e&&(e.code||e.message)))?'Засах эрхгүй байна':'Хадгалж чадсангүй');});
+}
+function initFirebase(){
+  var V='https://www.gstatic.com/firebasejs/10.12.2/';
+  setSave('pending');
+  Promise.all([import(V+'firebase-app.js'),import(V+'firebase-auth.js'),import(V+'firebase-database.js')]).then(function(m){
+    var A=m[1],D=m[2],app=m[0].initializeApp(CFG),auth=A.getAuth(app),db=D.getDatabase(app);
+    fb={db:db,ref:D.ref,update:D.update,set:D.set,get:D.get,uid:null};
+    function subscribe(){
+      if(typeof unsub==='function')unsub();
+      unsub=D.onValue(D.ref(db,'tree'),function(snap){
+      showLock(false);
+      var v=snap.val()||{};
+      state.title=v.title||'Манай ургийн мод';state.people=v.people||{};state.unions=v.unions||{};
+      normalize();synced=dataOf();
+      if(selected&&!state.people[selected])selected=null;
+      if(form&&form.type==='edit'&&!state.people[form.target])closeModal();
+      if(firstSync){firstSync=false;render();requestAnimationFrame(fit);}else render();
+    },function(){unsub=null;showLock(true);});
+    }
+    fb.subscribe=subscribe;
+    A.onAuthStateChanged(auth,function(user){
+      if(!user)return;var first=!fb.uid;fb.uid=user.uid;
+      D.get(D.ref(db,'editors/'+user.uid)).then(function(s){canEdit=s.exists();},function(){canEdit=false;}).then(function(){
+        setSave(canEdit?'ready':'viewonly');if(first)subscribe();});
+    });
+    A.signInAnonymously(auth).catch(function(e){setSave('offline');toast('Нэвтэрч чадсангүй: '+((e&&e.code)||''));});
+  }).catch(function(){setSave('offline');});
+}
+var unsub=null,locked=false;
+function showLock(on){
+  locked=on;$('lock').classList.toggle('show',on);
+  if(on){firstSync=false;state.people={};state.unions={};normalize();selected=null;render();setSave('locked');
+    setTimeout(function(){var i=$('lock-code');if(i&&!$('overlay').classList.contains('open'))i.focus();},50);}
+  else if($('save').getAttribute('data-s')==='locked')setSave(canEdit?'ready':'viewonly');
+}
+function tryCode(code,ok,bad){
+  fb.set(fb.ref(fb.db,'editors/'+fb.uid),code).then(function(){canEdit=true;ok('edit');},function(){
+    fb.set(fb.ref(fb.db,'viewers/'+fb.uid),code).then(function(){ok('view');},bad);});
+}
+function unlock(){
+  var code=($('lock-code').value||'').trim();if(!code||!fb||!fb.uid)return;
+  tryCode(code,function(kind){$('lock-code').value='';$('lock-err').style.display='none';
+    setSave(canEdit?'ready':'viewonly');firstSync=true;fb.subscribe();
+    toast(kind==='edit'?'Нээгдлээ — засах эрхтэй':'Нээгдлээ');},function(){$('lock-err').style.display='block';});
+}
+function guard(fn){if(locked){toast('Эхлээд кодоо оруулна уу');return;}if(canEdit||MODE!=='firebase')return fn&&fn();askJoin(fn);}
+function askJoin(after){
+  if(!fb||!fb.uid){toast('Холбогдож байна, түр хүлээнэ үү');return;}
+  openModal('<div class="m-head"><div><h3>Засах эрх авах</h3><div class="m">Гэр бүлийн кодыг модны эзнээс асуугаарай. Нэг удаа оруулахад энэ төхөөрөмж санана.</div></div></div>'+
+    '<label class="f" id="fg-code"><span>Гэр бүлийн код</span><input id="join-code" autocomplete="off"><span class="err">Код буруу байна</span></label>'+
+    '<div class="m-foot"><button class="btn" data-m="cancel">Болих</button><button class="btn primary" data-m="join">Нэвтрэх</button></div>',true);
+  form={join:after||null};setTimeout(function(){var i=$('join-code');if(i)i.focus();},30);
+}
+function doJoin(){
+  var code=($('join-code').value||'').trim();if(!code)return;
+  fb.set(fb.ref(fb.db,'editors/'+fb.uid),code).then(function(){
+    canEdit=true;setSave('ready');var fn=form&&form.join;closeModal();toast('Засах эрх нээгдлээ');render();if(fn)fn();
+  },function(){$('fg-code').classList.add('bad');});
+}
+
+/* ---------- edits ---------- */
+function newUnion(a,b){var id='u'+uid();state.unions[id]={id:id,a:a,b:b||null};return state.unions[id];}
+function deletePerson(id){
+  unionsOf(id).forEach(function(u){
+    if(u.a===id){u.a=u.b;u.b=null;}else if(u.b===id)u.b=null;
+    var kids=kidsOf(u.id);
+    if(!u.a||(!u.b&&!kids.length)){kids.forEach(function(k){P(k).parentUnion=null;});delete state.unions[u.id];}
+  });
+  delete state.people[id];state.order=state.order.filter(function(x){return x!==id;});
+  if(selected===id)selected=null;
+}
+
+/* ---------- modal: person form ---------- */
+var form=null;
+function openModal(html,small){var m=$('modal');m.className='modal'+(small?' small':'');m.innerHTML=html;$('overlay').classList.add('open');}
+function closeModal(){$('overlay').classList.remove('open');$('modal').innerHTML='';form=null;}
+function maleOf(ids){for(var i=0;i<ids.length;i++){if(ids[i]&&P(ids[i])&&P(ids[i]).gender==='m')return P(ids[i]);}return null;}
+function childDefaults(target,unionId){
+  var t=P(target),partner=null;
+  if(unionId&&unionId!=='__solo'){var u=state.unions[unionId];partner=partnerOf(u,target);}
+  var father=maleOf([target,partner]);var base=father||t;
+  return {patronymic:base.given||'',clan:(father&&father.clan)||t.clan||''};
+}
+function openForm(type,target){
+  var t=target?P(target):null,draft,unionOpts=null,spouseCheck=null;
+  if(type==='edit'){draft=JSON.parse(JSON.stringify(t));}
+  else{
+    draft={given:'',patronymic:'',clan:'',gender:'m',born:'',died:'',note:'',avatar:{kind:'initial',shape:'circle',color:null,emoji:'',photo:null}};
+    if(type==='child'){
+      unionOpts=unionsOf(target).map(function(u){var o=partnerOf(u,target);return {id:u.id,label:o?displayName(P(o)):'Ганцаараа (нөгөө эцэг/эхгүй)'};});
+      if(!unionOpts.some(function(o){return !partnerOf(state.unions[o.id],target);}))unionOpts.push({id:'__solo',label:'Ганцаараа (нөгөө эцэг/эхгүй)'});
+      var dft=childDefaults(target,unionOpts[0].id);draft.patronymic=dft.patronymic;draft.clan=dft.clan;
+    }
+    if(type==='spouse'){
+      draft.gender=t.gender==='m'?'f':'m';
+      var solo=unionsOf(target).filter(function(u){return !u.b&&kidsOf(u.id).length;})[0];
+      if(solo)spouseCheck={union:solo.id,n:kidsOf(solo.id).length};
+    }
+    if(type==='parent'){
+      var ps=parentsOf(target);draft.gender=ps.length&&P(ps[0]).gender==='m'?'f':'m';
+      if(draft.gender==='m'){draft.given=t.patronymic||'';draft.clan=t.clan||'';}
+    }
+  }
+  draft.avatar=Object.assign({kind:'initial',shape:'circle',color:null,emoji:'',photo:null},draft.avatar||{});
+  form={type:type,target:target,draft:draft,union:unionOpts?unionOpts[0].id:null,touched:{},spouseCheck:spouseCheck};
+  var titles={new:'Шинэ хүн нэмэх',edit:'Мэдээлэл засах',child:'Хүүхэд нэмэх',spouse:'Хань нэмэх',parent:'Эцэг / эх нэмэх'};
+  var sub=t?(type==='edit'?'':displayName(t)+' — '+{child:'хүүхэд',spouse:'хань',parent:'эцэг эсвэл эх'}[type]):'Дараа нь хүүхэд, хань, эцэг эхийг холбож болно';
+  var clans=clanList().map(function(c){return '<option value="'+esc(c)+'">';}).join('');
+  var h='<div class="m-head"><div><h3>'+titles[type]+'</h3>'+(sub?'<div class="m">'+esc(sub)+'</div>':'')+'</div><div id="pv"></div></div>';
+  if(unionOpts&&unionOpts.length>1){
+    h+='<div class="f full" style="margin-bottom:12px"><span>Нөгөө эцэг / эх</span><select id="f-union">'+unionOpts.map(function(o){return '<option value="'+o.id+'">'+esc(o.label)+'</option>';}).join('')+'</select></div>';
+  }
+  h+='<div class="grid">'+
+    '<label class="f" id="fg-given"><span>Нэр *</span><input data-k="given" autocomplete="off" value="'+esc(draft.given)+'"><span class="err">Нэрээ оруулна уу</span></label>'+
+    '<label class="f"><span>Овог (эцэг / эхийн нэр)</span><input data-k="patronymic" autocomplete="off" value="'+esc(draft.patronymic)+'"></label>'+
+    '<label class="f"><span>Ургийн овог</span><input data-k="clan" list="clans" autocomplete="off" placeholder="ж: Боржигин" value="'+esc(draft.clan)+'"><datalist id="clans">'+clans+'</datalist></label>'+
+    '<div class="f"><span>Хүйс</span><div class="seg" id="f-gender"><button type="button" data-v="m">Эрэгтэй</button><button type="button" data-v="f">Эмэгтэй</button></div></div>'+
+    '<label class="f"><span>Төрсөн он</span><input data-k="born" inputmode="numeric" maxlength="4" placeholder="ж: 1985" value="'+esc(draft.born)+'"></label>'+
+    '<label class="f"><span>Нас барсан он</span><input data-k="died" inputmode="numeric" maxlength="4" placeholder="Амьд бол хоосон" value="'+esc(draft.died)+'"></label>'+
+    '<label class="f full"><span>Тэмдэглэл</span><textarea data-k="note" placeholder="Мэргэжил, нутаг, дурсамж…">'+esc(draft.note)+'</textarea></label></div>'+
+    '<div class="m-sec"><h4>Дүрс</h4><div id="av-picker"></div></div>';
+  if(spouseCheck)h+='<label class="check"><input type="checkbox" id="f-share" checked> <span>'+esc(displayName(t))+'-ийн одоогийн '+spouseCheck.n+' хүүхдийн эцэг / эх мөн</span></label>';
+  h+='<div class="m-foot"><button class="btn" data-m="cancel">Болих</button><button class="btn primary" data-m="save">Хадгалах</button></div>';
+  openModal(h);
+  renderPicker();renderPreview();renderGender();
+  var m=$('modal');
+  m.querySelectorAll('[data-k]').forEach(function(inp){inp.addEventListener('input',function(){
+    var k=inp.getAttribute('data-k'),v=inp.value;
+    if(k==='born'||k==='died'){v=v.replace(/\D/g,'').slice(0,4);if(v!==inp.value)inp.value=v;}
+    form.draft[k]=v;form.touched[k]=1;
+    if(k==='given'){$('fg-given').classList.remove('bad');}
+    renderPreview();
+  });});
+  if($('f-union'))$('f-union').addEventListener('change',function(e){form.union=e.target.value;var d=childDefaults(form.target,form.union);
+    ['patronymic','clan'].forEach(function(k){if(!form.touched[k]){form.draft[k]=d[k];m.querySelector('[data-k='+k+']').value=d[k];}});});
+  $('f-gender').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;form.draft.gender=b.getAttribute('data-v');renderGender();renderPreview();renderPicker();});
+  setTimeout(function(){var g=m.querySelector('[data-k=given]');if(g&&!g.value)g.focus();},30);
+}
+function renderGender(){$('f-gender').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-v')===form.draft.gender);});}
+function renderPreview(){$('pv').innerHTML=miniAvatar(form.draft,72);}
+function renderPicker(){
+  var a=form.draft.avatar,h='<div class="seg" id="av-kind">'+[['initial','Үсэг'],['emoji','Эможи'],['photo','Зураг']].map(function(k){return '<button type="button" data-v="'+k[0]+'" class="'+(a.kind===k[0]?'on':'')+'">'+k[1]+'</button>';}).join('')+'</div>';
+  if(a.kind==='emoji')h+='<div class="emoji-grid">'+EMOJI.map(function(e){return '<button type="button" data-emoji="'+e+'" class="'+(a.emoji===e?'on':'')+'">'+e+'</button>';}).join('')+'</div>';
+  if(a.kind==='photo')h+='<div class="photo-row"><label class="btn sm">'+(a.photo?'Өөр зураг сонгох':'Зураг сонгох')+'<input type="file" accept="image/*" id="av-file" hidden></label>'+(a.photo?'<button type="button" class="btn sm" data-av="nophoto">Зураг хасах</button>':'<span class="none">Зураг дөрвөлжин тайрагдаж, жижгэрнэ</span>')+'</div>';
+  var auto=GENDER[form.draft.gender]||GENDER.o;
+  h+='<div class="av-row"><span>Өнгө</span><button type="button" class="sw auto '+(!a.color?'on':'')+'" data-color="" title="Хүйсээр"></button>'+
+    PALETTE.map(function(c){return '<button type="button" class="sw '+(a.color===c?'on':'')+'" data-color="'+c+'" style="background:'+c+'"></button>';}).join('')+'</div>';
+  h+='<div class="av-row"><span>Хэлбэр</span>'+['circle','square','hex'].map(function(s){return '<button type="button" class="shp '+(a.shape===s?'on':'')+'" data-shape="'+s+'" title="'+{circle:'Дугуй',square:'Дөрвөлжин',hex:'Зургаан өнцөгт'}[s]+'"><svg width="22" height="22">'+shapeEl(s,11,11,8.5,'fill="'+(a.color||auto)+'"')+'</svg></button>';}).join('')+'</div>';
+  var el=$('av-picker');el.innerHTML=h;
+  var file=$('av-file');
+  if(file)file.addEventListener('change',function(){var fl=file.files&&file.files[0];if(!fl)return;readPhoto(fl).then(function(url){form.draft.avatar.photo=url;renderPicker();renderPreview();},function(){toast('Зургийг уншиж чадсангүй');});});
+}
+function readPhoto(file){return new Promise(function(res,rej){var fr=new FileReader();fr.onload=function(){var img=new Image();img.onload=function(){var s=Math.min(img.width,img.height),c=document.createElement('canvas');c.width=c.height=160;var ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,160,160);ctx.drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,160,160);res(c.toDataURL('image/jpeg',0.82));};img.onerror=rej;img.src=fr.result;};fr.onerror=rej;fr.readAsDataURL(file);});}
+function savePerson(){
+  var d=form.draft;d.given=(d.given||'').trim();
+  if(!d.given){$('fg-given').classList.add('bad');$('modal').querySelector('[data-k=given]').focus();return;}
+  ['patronymic','clan','note'].forEach(function(k){d[k]=(d[k]||'').trim();});
+  if(d.avatar.kind==='emoji'&&!d.avatar.emoji)d.avatar.kind='initial';
+  if(d.avatar.kind==='photo'&&!d.avatar.photo)d.avatar.kind='initial';
+  if(d.avatar.kind!=='photo')d.avatar.photo=null;
+  var data={given:d.given,patronymic:d.patronymic,clan:d.clan,gender:d.gender,born:d.born||'',died:d.died||'',note:d.note,avatar:d.avatar};
+  var type=form.type,target=form.target,id;
+  if(type==='edit'){Object.assign(P(target),data);id=target;}
+  else{
+    id='p'+uid();state.people[id]=Object.assign({id:id,parentUnion:null,created:Date.now()},data);state.order.push(id);
+    if(type==='child'){var u=form.union&&form.union!=='__solo'?state.unions[form.union]:null;
+      if(!u)u=unionsOf(target).filter(function(x){return !partnerOf(x,target);})[0]||newUnion(target,null);
+      P(id).parentUnion=u.id;}
+    if(type==='spouse'){var share=$('f-share');
+      if(form.spouseCheck&&share&&share.checked)state.unions[form.spouseCheck.union].b=id;else newUnion(target,id);}
+    if(type==='parent'){var t=P(target),pu=t.parentUnion&&state.unions[t.parentUnion];
+      if(pu&&!pu.b)pu.b=id;else if(!pu){var nu=newUnion(id,null);t.parentUnion=nu.id;}}
+  }
+  var keepSel=type==='new'?id:(target||id);
+  closeModal();selected=keepSel;commit();
+  if(type==='new'||!boxes[id])setTimeout(function(){centerOn(id);},0);
+  toast(type==='edit'?'Хадгаллаа':displayName(P(id))+' нэмэгдлээ');
+}
+function confirmBox(title,msg,okLabel,fn){
+  openModal('<div class="m-head"><div><h3>'+esc(title)+'</h3></div></div><p style="margin:0;font-size:14px;line-height:1.55;color:#4a525c">'+esc(msg)+'</p><div class="m-foot"><button class="btn" data-m="cancel">Болих</button><button class="btn primary" data-m="ok" style="background:#a3364d;border-color:#a3364d">'+esc(okLabel)+'</button></div>',true);
+  form={confirm:fn};
+}
+function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(function(){t.classList.remove('show');},1800);}
+
+/* ---------- skeleton ---------- */
+$('app').innerHTML=
+ '<header><input class="title-input" id="title" aria-label="Гарчиг" maxlength="60"><span class="stats" id="stats"></span><div class="spacer"></div>'+
+ '<label class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" placeholder="Хүн хайх…" autocomplete="off"></label>'+
+ '<button class="btn primary" id="add">+ Хүн нэмэх</button>'+
+ '<div class="menu-wrap"><button class="btn icon" id="more" title="Бусад">⋯</button><div class="menu" id="menu">'+
+   '<button data-menu="join">Засах код оруулах</button><button data-menu="copy">Өгөгдлийг JSON-оор хуулах</button><button data-menu="import">JSON-оос оруулах</button><hr>'+
+   '<button data-menu="sample">Жишээ модыг ачаалах</button><button data-menu="clear" style="color:#a3364d">Бүгдийг арилгах</button></div></div></header>'+
+ '<div class="toolbar"><span class="tlabel">Салаалалт</span><div class="seg" data-set="layout"><button data-v="td">↓ Дээрээс доош</button><button data-v="lr">→ Зүүнээс баруун</button><button data-v="radial">◎ Дугуй</button></div>'+
+ '<span class="tlabel">Шугам</span><div class="seg" data-set="lines"><button data-v="elbow">Өнцөгт</button><button data-v="curve">Муруй</button></div>'+
+ '<span class="tlabel">Өнгө</span><div class="seg" data-set="color"><button data-v="gender">Хүйсээр</button><button data-v="clan">Овгоор</button><button data-v="gen">Үеэр</button></div>'+
+ '<div class="save" id="save" data-s="pending"><span class="dot"></span><span></span></div></div>'+
+ '<main><div class="stage" id="stage"><svg id="canvas"><g id="vp"></g></svg>'+
+   '<div class="hint" id="hint">Хүн дээр дарж хүүхэд, хань, эцэг эх нэмнэ · Чирж хөдөлгөх · Гүйлгэж томруулах</div>'+
+   '<div class="legend" id="legend"></div>'+
+   '<div class="zoom"><button class="btn" data-z="in" title="Томруулах">+</button><button class="btn" data-z="out" title="Жижигрүүлэх">−</button><button class="btn" data-z="fit" title="Бүгдийг харах" style="font-size:15px">⤢</button></div>'+
+   '<div class="empty lock" id="lock"><div class="box"><h3>Гэр бүлийн ургийн мод</h3><p>Энэ модыг зөвхөн гэр бүлийнхэн үзнэ. Кодоо оруулна уу. Нэг удаа оруулахад энэ төхөөрөмж санана.</p>'+
+     '<div class="f" style="text-align:left"><input id="lock-code" placeholder="Гэр бүлийн код" autocomplete="off"><span class="err" id="lock-err" style="display:none">Код буруу байна</span></div>'+
+     '<div class="row" style="margin-top:12px"><button class="btn primary" id="lock-btn">Нээх</button></div></div></div>'+
+   '<div class="empty" id="empty"><div class="box"><h3>Ургийн модоо эхлүүлье</h3><p>Эхлээд өөрийгөө эсвэл хамгийн ахмад өвөг дээдсээ нэмээрэй. Дараа нь хүүхэд, хань, эцэг эхийг нь холбоно.</p><div class="row"><button class="btn primary" data-empty="add">+ Эхний хүн</button><button class="btn" data-empty="sample">Жишээ үзэх</button></div></div></div>'+
+ '</div><aside class="panel" id="panel"></aside></main>'+
+ '<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div><div class="toast" id="toast"></div>';
+
+/* ---------- events ---------- */
+$('title').addEventListener('change',function(e){var v=e.target.value.trim()||'Ургийн мод';if(!canEdit&&MODE==='firebase'){e.target.value=state.title;askJoin(function(){state.title=v;commit();});return;}state.title=v;commit();});
+$('title').addEventListener('keydown',function(e){if(e.key==='Enter')e.target.blur();});
+$('q').addEventListener('input',function(){render();});
+$('q').addEventListener('keydown',function(e){if(e.key==='Enter'){var q=e.target.value.trim().toLowerCase();if(!q)return;
+  var hit=state.order.filter(function(id){var p=P(id);return (displayName(p)+' '+p.given+' '+(p.patronymic||'')+' '+(p.clan||'')).toLowerCase().indexOf(q)>=0;})[0];
+  if(hit)select(hit,true);else toast('Олдсонгүй');}
+  if(e.key==='Escape'){e.target.value='';render();}});
+$('add').addEventListener('click',function(){guard(function(){openForm('new');});});
+$('more').addEventListener('click',function(e){e.stopPropagation();$('menu').classList.toggle('open');});
+document.addEventListener('click',function(e){if(!e.target.closest('.menu-wrap'))$('menu').classList.remove('open');});
+$('menu').addEventListener('click',function(e){var b=e.target.closest('[data-menu]');if(!b)return;$('menu').classList.remove('open');var a=b.getAttribute('data-menu');
+  if(a==='join'){if(canEdit)toast(MODE==='firebase'?'Танд засах эрх байна':'Энэ браузерт засах боломжтой');else askJoin(null);return;}
+  if(a==='copy'){var txt=JSON.stringify(dataOf(),null,2);
+    var showBox=function(){openModal('<div class="m-head"><div><h3>Өгөгдөл (JSON)</h3><div class="m">Бүгдийг сонгоод хуулж хадгална уу</div></div></div><textarea class="json" id="json-out" readonly></textarea><div class="m-foot"><button class="btn" data-m="cancel">Хаах</button></div>');$('json-out').value=txt;$('json-out').select();};
+    try{navigator.clipboard.writeText(txt).then(function(){toast('JSON хуулагдлаа');},showBox);}catch(err){showBox();}}
+  if(a==='import')guard(function(){openModal('<div class="m-head"><div><h3>JSON-оос оруулах</h3><div class="m">Одоогийн модыг бүхэлд нь солино</div></div></div><textarea class="json" id="json-in" placeholder="{ ... }"></textarea><div class="m-foot"><button class="btn" data-m="cancel">Болих</button><button class="btn primary" data-m="import">Оруулах</button></div>');form={};});
+  if(a==='sample')guard(function(){confirmBox('Жишээ модыг ачаалах уу?','Одоогийн мод жишээ өгөгдлөөр солигдоно.','Ачаалах',function(){loadData(sampleState());selected=null;commit();fit();});});
+  if(a==='clear')guard(function(){confirmBox('Бүгдийг арилгах уу?','Модны бүх хүн, холбоос устана. Буцаах боломжгүй.','Арилгах',function(){state.people={};state.unions={};state.order=[];selected=null;commit();});});
+});
+document.querySelectorAll('.toolbar .seg').forEach(function(seg){seg.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
+  var k=seg.getAttribute('data-set'),v=b.getAttribute('data-v');if(state.settings[k]===v)return;state.settings[k]=v;lsSet(LS_SET,state.settings);render();if(k==='layout')fit();});});
+document.querySelector('.zoom').addEventListener('click',function(e){var b=e.target.closest('[data-z]');if(!b)return;var z=b.getAttribute('data-z'),r=stageRect();
+  if(z==='fit')fit();else zoomAt(r.width/2,r.height/2,z==='in'?1.25:0.8);});
+$('empty').addEventListener('click',function(e){var b=e.target.closest('[data-empty]');if(!b)return;
+  if(b.getAttribute('data-empty')==='add')guard(function(){openForm('new');});else guard(function(){loadData(sampleState());commit();fit();});});
+$('panel').addEventListener('click',function(e){
+  var g=e.target.closest('[data-goto]');if(g){select(g.getAttribute('data-goto'),true);return;}
+  var b=e.target.closest('[data-act]');if(!b)return;var a=b.getAttribute('data-act');
+  if(a==='close'){selected=null;render();return;}
+  if(a==='delete'){var p=P(selected),id=selected;guard(function(){confirmBox(displayName(p)+'-г устгах уу?','Энэ хүн болон түүний гэр бүлийн холбоосууд устана. Хүүхдүүд нь модонд үлдэнэ.','Устгах',function(){deletePerson(id);commit();});});return;}
+  var sid=selected;guard(function(){openForm(a,sid);});
+});
+$('overlay').addEventListener('mousedown',function(e){if(e.target===$('overlay'))closeModal();});
+$('modal').addEventListener('click',function(e){
+  var b=e.target.closest('[data-m]');
+  if(b){var m=b.getAttribute('data-m');
+    if(m==='cancel')closeModal();
+    if(m==='save')savePerson();
+    if(m==='ok'){var fn=form&&form.confirm;closeModal();if(fn)fn();}
+    if(m==='join'){doJoin();return;}
+    if(m==='import'){try{var s=JSON.parse($('json-in').value);if(!s||!s.people)throw 0;loadData(s);selected=null;closeModal();commit();fit();toast('Оруулсан');}catch(err){toast('JSON буруу байна');}}
+    return;}
+  if(!form||!form.draft)return;var a=form.draft.avatar,t;
+  if((t=e.target.closest('#av-kind button'))){a.kind=t.getAttribute('data-v');if(a.kind==='emoji'&&!a.emoji)a.emoji=form.draft.gender==='f'?'👩':'👨';renderPicker();renderPreview();}
+  else if((t=e.target.closest('[data-emoji]'))){a.emoji=t.getAttribute('data-emoji');renderPicker();renderPreview();}
+  else if((t=e.target.closest('[data-color]'))){a.color=t.getAttribute('data-color')||null;renderPicker();renderPreview();}
+  else if((t=e.target.closest('[data-shape]'))){a.shape=t.getAttribute('data-shape');renderPicker();renderPreview();}
+  else if((t=e.target.closest('[data-av=nophoto]'))){a.photo=null;renderPicker();renderPreview();}
+});
+$('modal').addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.tagName==='INPUT'&&form&&form.draft){e.preventDefault();savePerson();}if(e.key==='Enter'&&e.target.id==='join-code'){e.preventDefault();doJoin();}});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){if($('overlay').classList.contains('open'))closeModal();else if(selected){selected=null;render();}}});
+
+$('lock-btn').addEventListener('click',unlock);
+$('lock-code').addEventListener('keydown',function(e){if(e.key==='Enter')unlock();});
+/* pan / zoom */
+var svg=$('canvas'),pointers={},moved=false,lastDist=0;
+svg.addEventListener('wheel',function(e){e.preventDefault();var r=stageRect();zoomAt(e.clientX-r.left,e.clientY-r.top,Math.exp(-e.deltaY*(e.ctrlKey?0.01:0.0016)));},{passive:false});
+svg.addEventListener('pointerdown',function(e){pointers[e.pointerId]={x:e.clientX,y:e.clientY};moved=false;
+  var ids=Object.keys(pointers);if(ids.length===2){var a=pointers[ids[0]],b=pointers[ids[1]];lastDist=Math.hypot(a.x-b.x,a.y-b.y);}});
+window.addEventListener('pointermove',function(e){var p=pointers[e.pointerId];if(!p)return;
+  var ids=Object.keys(pointers);
+  if(ids.length===1){var dx=e.clientX-p.x,dy=e.clientY-p.y;view.x+=dx;view.y+=dy;
+    if(Math.abs(dx)+Math.abs(dy)>0){if(!moved&&Math.abs(dx)+Math.abs(dy)<2){} moved=moved||Math.abs(dx)+Math.abs(dy)>2;svg.classList.add('dragging');applyView();}
+    p.x=e.clientX;p.y=e.clientY;}
+  else if(ids.length===2){p.x=e.clientX;p.y=e.clientY;var a=pointers[ids[0]],b=pointers[ids[1]],d=Math.hypot(a.x-b.x,a.y-b.y),r=stageRect();
+    if(lastDist)zoomAt((a.x+b.x)/2-r.left,(a.y+b.y)/2-r.top,d/lastDist);lastDist=d;moved=true;}
+});
+function up(e){if(pointers[e.pointerId]){delete pointers[e.pointerId];}if(!Object.keys(pointers).length)svg.classList.remove('dragging');lastDist=0;}
+window.addEventListener('pointerup',up);window.addEventListener('pointercancel',up);
+var totalMove=0;
+svg.addEventListener('pointerdown',function(){totalMove=0;});
+window.addEventListener('pointermove',function(e){if(Object.keys(pointers).length)totalMove+=Math.abs(e.movementX||0)+Math.abs(e.movementY||0);});
+svg.addEventListener('click',function(e){
+  if(totalMove>6)return;
+  var n=e.target.closest('.node');
+  if(n){var id=n.getAttribute('data-id');if(selected===id){render();}else select(id);}
+  else if(selected){selected=null;render();}
+});
+svg.addEventListener('dblclick',function(e){var n=e.target.closest('.node');if(n){var id=n.getAttribute('data-id');guard(function(){openForm('edit',id);});}});
+var hintTimer=setTimeout(function(){var h=$('hint');if(h)h.style.display='none';},9000);
+
+/* ---------- start ---------- */
+normalize();render();
+if(MODE==='firebase')initFirebase();else{setSave('local');requestAnimationFrame(function(){fit();});}
+var lastW=0;
+window.addEventListener('resize',function(){var r=stageRect();if(Math.abs(r.width-lastW)>200){lastW=r.width;}});
+})();
+</script></body></html>
